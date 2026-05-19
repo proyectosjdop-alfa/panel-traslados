@@ -523,12 +523,14 @@
                 'Fecha':                r.fecha              || '---',
                 'Sector':               (r.sector            || '---').toUpperCase(),
                 'Encargado':            r.encargado          || '---',
-                'Cuadrilla que Recibe': r.cuadrilla_recibe   || '---'
+                'Cuadrilla que Recibe': r.cuadrilla_recibe   || '---',
+                'Estado':               r.estado             || 'ENTREGADO'
               }))
             : datos.map(r => ({
                 'Fecha':                 r.fecha              || '---',
                 'Sector':                (r.sector            || '---').toUpperCase(),
-                'Cuadrilla Solicitante': r.cuadrilla_solicita || '---'
+                'Cuadrilla Solicitante': r.cuadrilla_solicita || '---',
+                'Estado':                r.estado             || 'SOLICITADO'
               }));
 
         const ws   = XLSX.utils.json_to_sheet(filas);
