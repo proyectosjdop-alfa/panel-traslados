@@ -133,10 +133,6 @@
             <h4>Total Solicitudes</h4>
             <p id="m-solicitudes">0</p>
         </div>
-        <div class="metric-card" style="border-left-color:#22c55e">
-            <h4>Cuadrillas Activas</h4>
-            <p id="m-cuadrillas">0</p>
-        </div>
         <div class="metric-card" style="border-left-color:#f59e0b">
             <h4>Último Registro</h4>
             <p id="m-ultimo" style="font-size:0.85rem;">---</p>
@@ -344,15 +340,8 @@
 
     // ── MÉTRICAS ─────────────────────────────────────────────────────────────
     function actualizarMetricas() {
-        const cuadrillasUnicas = new Set([
-            ...datosTraslados.map(r => r.cuadrilla_recibe),
-            ...datosSolicitudes.map(r => r.cuadrilla_solicita)
-        ]);
         document.getElementById('m-traslados').innerText   = datosTraslados.length;
         document.getElementById('m-solicitudes').innerText = datosSolicitudes.length;
-        document.getElementById('m-cuadrillas').innerText  = cuadrillasUnicas.size;
-
-        // El más reciente entre traslados y solicitudes
         const fechas = [
             ...datosTraslados.map(r => r.fecha),
             ...datosSolicitudes.map(r => r.fecha)
@@ -525,11 +514,26 @@
     }
 
     function exportarExcel() {
-        const datos = tabActiva === 'traslados' ? datosTraslados : datosSolicitudes;
+        const esTraslado = tabActiva === 'traslados';
+        const datos = esTraslado ? datosTraslados : datosSolicitudes;
         if (datos.length === 0) return alert("No hay datos para exportar");
-        const ws = XLSX.utils.json_to_sheet(datos);
-        const wb = XLSX.utils.book_new();
-        const hoja = tabActiva === 'traslados' ? "Traslados" : "Solicitudes";
+
+        const filas = esTraslado
+            ? datos.map(r => ({
+                'Fecha':                r.fecha              || '---',
+                'Sector':               (r.sector            || '---').toUpperCase(),
+                'Encargado':            r.encargado          || '---',
+                'Cuadrilla que Recibe': r.cuadrilla_recibe   || '---'
+              }))
+            : datos.map(r => ({
+                'Fecha':                 r.fecha              || '---',
+                'Sector':                (r.sector            || '---').toUpperCase(),
+                'Cuadrilla Solicitante': r.cuadrilla_solicita || '---'
+              }));
+
+        const ws   = XLSX.utils.json_to_sheet(filas);
+        const wb   = XLSX.utils.book_new();
+        const hoja = esTraslado ? "Traslados" : "Solicitudes";
         XLSX.utils.book_append_sheet(wb, ws, hoja);
         const fecha = new Date().toLocaleDateString('es-HN').replace(/\//g, '-');
         XLSX.writeFile(wb, `${hoja}_${sectorSesion}_${fecha}.xlsx`);
