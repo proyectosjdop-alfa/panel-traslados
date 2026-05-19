@@ -463,54 +463,87 @@
         filtrar(tipo);
     }
 
-    // ── CAMBIAR ESTADO TRASLADO (solo local, sin BD) ─────────────────────────
-    function cambiarEstadoTraslado(el, id) {
+    // ── CAMBIAR ESTADO TRASLADO (persistente en D1) ──────────────────────────
+    async function cambiarEstadoTraslado(el, id) {
         const nuevoEstado = el.value;
         const esFinal = nuevoEstado === 'TRASLADADO EN ENERGIS';
         const msg = esFinal
-            ? `¿Confirmar "${nuevoEstado}"?\n\n⚠️ Este estado es DEFINITIVO en esta sesión.`
+            ? `¿Confirmar "${nuevoEstado}"?\n\n⚠️ Este estado es DEFINITIVO y no se podrá cambiar.`
             : `¿Confirmar cambio a "${nuevoEstado}"?`;
         if (!confirm(msg)) { el.value = el.dataset.prev || 'ENTREGADO'; return; }
-        el.dataset.prev = nuevoEstado;
 
-        // Actualizar color
-        if (nuevoEstado === 'TRASLADADO EN ENERGIS') {
-            el.style.background = '#22c55e'; el.style.color = 'white';
-        } else {
-            el.style.background = '#ef4444'; el.style.color = 'white';
+        el.disabled = true;
+        try {
+            const res  = await fetch(`${WORKER_URL}/actualizar-estado-traslado`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, estado: nuevoEstado })
+            });
+            const data = await res.json();
+            if (data.ok) {
+                el.dataset.prev = nuevoEstado;
+                // Actualizar color
+                el.style.background = nuevoEstado === 'TRASLADADO EN ENERGIS' ? '#22c55e' : '#ef4444';
+                el.style.color = 'white';
+                // Si es final, bloquear visualmente
+                if (esFinal) {
+                    el.parentElement.innerHTML = `<span class="estado-bloqueado" style="background:#22c55e;color:white;">TRASLADADO EN ENERGIS</span>`;
+                }
+                // Actualizar en memoria
+                const reg = datosTraslados.find(r => r.id === id);
+                if (reg) reg.estado = nuevoEstado;
+            } else {
+                alert("Este estado ya está bloqueado y no se puede cambiar.");
+                el.value = el.dataset.prev || 'ENTREGADO';
+            }
+        } catch(e) {
+            alert("Error de conexión al guardar el estado.");
+            el.value = el.dataset.prev || 'ENTREGADO';
         }
-        // Si es final, bloquear visualmente
-        if (esFinal) {
-            el.parentElement.innerHTML = `<span class="estado-bloqueado" style="background:#22c55e;color:white;">TRASLADADO EN ENERGIS</span>`;
-        }
-        // Actualizar en memoria
-        const reg = datosTraslados.find(r => r.id === id);
-        if (reg) reg.estado = nuevoEstado;
+        el.disabled = false;
     }
 
-    // ── CAMBIAR ESTADO SOLICITUD (solo local, sin BD) ─────────────────────────
-    function cambiarEstadoSolicitud(el, id) {
+    // ── CAMBIAR ESTADO SOLICITUD (persistente en D1) ─────────────────────────
+    async function cambiarEstadoSolicitud(el, id) {
         const nuevoEstado = el.value;
         const esFinal = nuevoEstado === 'ENTREGADO';
         const msg = esFinal
-            ? `¿Confirmar "${nuevoEstado}"?\n\n⚠️ Este estado es DEFINITIVO en esta sesión.`
+            ? `¿Confirmar "${nuevoEstado}"?\n\n⚠️ Este estado es DEFINITIVO y no se podrá cambiar.`
             : `¿Confirmar cambio a "${nuevoEstado}"?`;
         if (!confirm(msg)) { el.value = el.dataset.prev || 'SOLICITADO'; return; }
-        el.dataset.prev = nuevoEstado;
 
-        // Actualizar color
-        if (nuevoEstado === 'ANULADO') {
-            el.style.background = '#eab308'; el.style.color = '#000';
-        } else if (nuevoEstado === 'SOLICITADO') {
-            el.style.background = '#ef4444'; el.style.color = 'white';
+        el.disabled = true;
+        try {
+            const res  = await fetch(`${WORKER_URL}/actualizar-estado-solicitud`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, estado: nuevoEstado })
+            });
+            const data = await res.json();
+            if (data.ok) {
+                el.dataset.prev = nuevoEstado;
+                // Actualizar color
+                if (nuevoEstado === 'ANULADO') {
+                    el.style.background = '#eab308'; el.style.color = '#000';
+                } else {
+                    el.style.background = '#ef4444'; el.style.color = 'white';
+                }
+                // Si es final, bloquear visualmente
+                if (esFinal) {
+                    el.parentElement.innerHTML = `<span class="estado-bloqueado estado-ENTREGADO">ENTREGADO</span>`;
+                }
+                // Actualizar en memoria
+                const reg = datosSolicitudes.find(r => r.id === id);
+                if (reg) reg.estado = nuevoEstado;
+            } else {
+                alert("Este estado ya está bloqueado y no se puede cambiar.");
+                el.value = el.dataset.prev || 'SOLICITADO';
+            }
+        } catch(e) {
+            alert("Error de conexión al guardar el estado.");
+            el.value = el.dataset.prev || 'SOLICITADO';
         }
-        // Si es final, bloquear visualmente
-        if (esFinal) {
-            el.parentElement.innerHTML = `<span class="estado-bloqueado estado-ENTREGADO">ENTREGADO</span>`;
-        }
-        // Actualizar en memoria
-        const reg = datosSolicitudes.find(r => r.id === id);
-        if (reg) reg.estado = nuevoEstado;
+        el.disabled = false;
     }
 
     function exportarExcel() {
