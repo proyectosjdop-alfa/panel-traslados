@@ -398,10 +398,10 @@
                 const bloqueado = estado === 'TRASLADADO EN ENERGIS';
                 const colorClass = bloqueado ? 'estado-TRASLADADO' : (estado === 'ENTREGADO' ? 'estado-ENTREGADO' : '');
                 const celdaEstado = bloqueado
-                    ? `<span class="estado-bloqueado estado-TRASLADADO">TRASLADADO EN ENERGIS</span>`
-                    : `<select class="estado-select estado-${estado.replace(/\s+/g,'_')}"
+                    ? `<span class="estado-bloqueado estado-ENTREGADO" style="background:#22c55e;color:white;">TRASLADADO EN ENERGIS</span>`
+                    : `<select class="estado-select"
                             onchange="cambiarEstadoTraslado(this, ${r.id})"
-                            style="${estado==='ENTREGADO' ? 'background:#22c55e;color:white;' : 'background:#38bdf8;color:#0f172a;'}">
+                            style="${estado==='TRASLADADO EN ENERGIS' ? 'background:#22c55e;color:white;' : 'background:#ef4444;color:white;'}">
                           <option value="ENTREGADO" ${estado==='ENTREGADO'?'selected':''}>ENTREGADO</option>
                           <option value="TRASLADADO EN ENERGIS" ${estado==='TRASLADADO EN ENERGIS'?'selected':''}>TRASLADADO EN ENERGIS</option>
                        </select>`;
@@ -485,14 +485,14 @@
         el.dataset.prev = nuevoEstado;
 
         // Actualizar color
-        if (nuevoEstado === 'ENTREGADO') {
+        if (nuevoEstado === 'TRASLADADO EN ENERGIS') {
             el.style.background = '#22c55e'; el.style.color = 'white';
         } else {
             el.style.background = '#ef4444'; el.style.color = 'white';
         }
         // Si es final, bloquear visualmente
         if (esFinal) {
-            el.parentElement.innerHTML = `<span class="estado-bloqueado estado-TRASLADADO">TRASLADADO EN ENERGIS</span>`;
+            el.parentElement.innerHTML = `<span class="estado-bloqueado" style="background:#22c55e;color:white;">TRASLADADO EN ENERGIS</span>`;
         }
         // Actualizar en memoria
         const reg = datosTraslados.find(r => r.id === id);
