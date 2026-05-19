@@ -67,6 +67,14 @@
         .badge-sector { background: #1e3a4a; color: var(--accent); padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; }
         .empty-row td { color: #64748b; padding: 30px; font-style: italic; }
 
+        /* ESTADOS */
+        .estado-bloqueado { display: inline-block; padding: 5px 12px; border-radius: 6px; font-size: 0.72rem; font-weight: bold; }
+        .estado-select { padding: 5px 8px; border-radius: 6px; border: none; font-size: 0.72rem; font-weight: bold; cursor: pointer; outline: none; }
+        .estado-SOLICITADO   { background: #ef4444; color: white; }
+        .estado-ANULADO      { background: #eab308; color: #000; }
+        .estado-ENTREGADO    { background: #22c55e; color: white; }
+        .estado-TRASLADADO   { background: #ef4444; color: white; }
+
         /* LOADING */
         .spinner { display: inline-block; width: 28px; height: 28px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 10px; }
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -216,11 +224,12 @@
                     <th>Sector</th>
                     <th>Encargado que Asigna</th>
                     <th>Cuadrilla que Recibe</th>
+                    <th>Estado</th>
                     <th>PDF</th>
                 </tr>
             </thead>
             <tbody id="tbody-traslados">
-                <tr><td colspan="6" style="text-align:center; padding:30px;">
+                <tr><td colspan="7" style="text-align:center; padding:30px;">
                     <div class="spinner"></div><br><span style="color:#64748b;">Cargando datos...</span>
                 </td></tr>
             </tbody>
@@ -236,11 +245,12 @@
                     <th>Fecha</th>
                     <th>Sector</th>
                     <th>Cuadrilla Solicitante</th>
+                    <th>Estado</th>
                     <th>PDF</th>
                 </tr>
             </thead>
             <tbody id="tbody-solicitudes">
-                <tr><td colspan="5" style="text-align:center; padding:30px;">
+                <tr><td colspan="6" style="text-align:center; padding:30px;">
                     <div class="spinner"></div><br><span style="color:#64748b;">Cargando datos...</span>
                 </td></tr>
             </tbody>
@@ -380,20 +390,33 @@
             });
 
             if (filtrados.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#64748b; padding:30px; font-style:italic;">No hay registros con los filtros seleccionados</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#64748b; padding:30px; font-style:italic;">No hay registros con los filtros seleccionados</td></tr>';
                 return;
             }
-            tbody.innerHTML = filtrados.map((r, i) => `
-                <tr>
+            tbody.innerHTML = filtrados.map((r, i) => {
+                const estado = r.estado || 'ENTREGADO';
+                const bloqueado = estado === 'TRASLADADO EN ENERGIS';
+                const colorClass = bloqueado ? 'estado-TRASLADADO' : (estado === 'ENTREGADO' ? 'estado-ENTREGADO' : '');
+                const celdaEstado = bloqueado
+                    ? `<span class="estado-bloqueado estado-TRASLADADO">TRASLADADO EN ENERGIS</span>`
+                    : `<select class="estado-select estado-${estado.replace(/\s+/g,'_')}"
+                            onchange="cambiarEstadoTraslado(this, ${r.id})"
+                            style="${estado==='ENTREGADO' ? 'background:#22c55e;color:white;' : 'background:#38bdf8;color:#0f172a;'}">
+                          <option value="ENTREGADO" ${estado==='ENTREGADO'?'selected':''}>ENTREGADO</option>
+                          <option value="TRASLADADO EN ENERGIS" ${estado==='TRASLADADO EN ENERGIS'?'selected':''}>TRASLADADO EN ENERGIS</option>
+                       </select>`;
+                return `<tr>
                     <td style="color:#64748b">${i + 1}</td>
                     <td>${r.fecha || '---'}</td>
                     <td><span class="badge-sector">${(r.sector || '---').toUpperCase()}</span></td>
                     <td>${r.encargado || '---'}</td>
                     <td style="font-weight:bold; color:var(--enee-yellow)">${r.cuadrilla_recibe || '---'}</td>
+                    <td>${celdaEstado}</td>
                     <td>${r.pdf_url
                         ? `<a href="${r.pdf_url}" target="_blank" class="btn-pdf"><i class="fas fa-file-pdf"></i> Ver PDF</a>`
                         : '<span style="color:#64748b">Sin PDF</span>'}</td>
-                </tr>`).join('');
+                </tr>`;
+            }).join('');
 
         } else {
             const desde     = document.getElementById('s-fecha-desde').value;
@@ -410,19 +433,32 @@
             });
 
             if (filtrados.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#64748b; padding:30px; font-style:italic;">No hay registros con los filtros seleccionados</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#64748b; padding:30px; font-style:italic;">No hay registros con los filtros seleccionados</td></tr>';
                 return;
             }
-            tbody.innerHTML = filtrados.map((r, i) => `
-                <tr>
+            tbody.innerHTML = filtrados.map((r, i) => {
+                const estado = r.estado || 'SOLICITADO';
+                const bloqueado = estado === 'ENTREGADO';
+                const celdaEstado = bloqueado
+                    ? `<span class="estado-bloqueado estado-ENTREGADO">ENTREGADO</span>`
+                    : `<select class="estado-select"
+                            onchange="cambiarEstadoSolicitud(this, ${r.id})"
+                            style="${estado==='ANULADO' ? 'background:#eab308;color:#000;' : 'background:#ef4444;color:white;'}">
+                          <option value="SOLICITADO" ${estado==='SOLICITADO'?'selected':''}>SOLICITADO</option>
+                          <option value="ANULADO"    ${estado==='ANULADO'?'selected':''}>ANULADO</option>
+                          <option value="ENTREGADO"  ${estado==='ENTREGADO'?'selected':''}>ENTREGADO</option>
+                       </select>`;
+                return `<tr>
                     <td style="color:#64748b">${i + 1}</td>
                     <td>${r.fecha || '---'}</td>
                     <td><span class="badge-sector">${(r.sector || '---').toUpperCase()}</span></td>
                     <td style="font-weight:bold; color:var(--enee-yellow)">${r.cuadrilla_solicita || '---'}</td>
+                    <td>${celdaEstado}</td>
                     <td>${r.pdf_url
                         ? `<a href="${r.pdf_url}" target="_blank" class="btn-pdf"><i class="fas fa-file-pdf"></i> Ver PDF</a>`
                         : '<span style="color:#64748b">Sin PDF</span>'}</td>
-                </tr>`).join('');
+                </tr>`;
+            }).join('');
         }
     }
 
@@ -438,7 +474,56 @@
         filtrar(tipo);
     }
 
-    // ── EXPORTAR EXCEL ───────────────────────────────────────────────────────
+    // ── CAMBIAR ESTADO TRASLADO (solo local, sin BD) ─────────────────────────
+    function cambiarEstadoTraslado(el, id) {
+        const nuevoEstado = el.value;
+        const esFinal = nuevoEstado === 'TRASLADADO EN ENERGIS';
+        const msg = esFinal
+            ? `¿Confirmar "${nuevoEstado}"?\n\n⚠️ Este estado es DEFINITIVO en esta sesión.`
+            : `¿Confirmar cambio a "${nuevoEstado}"?`;
+        if (!confirm(msg)) { el.value = el.dataset.prev || 'ENTREGADO'; return; }
+        el.dataset.prev = nuevoEstado;
+
+        // Actualizar color
+        if (nuevoEstado === 'ENTREGADO') {
+            el.style.background = '#22c55e'; el.style.color = 'white';
+        } else {
+            el.style.background = '#ef4444'; el.style.color = 'white';
+        }
+        // Si es final, bloquear visualmente
+        if (esFinal) {
+            el.parentElement.innerHTML = `<span class="estado-bloqueado estado-TRASLADADO">TRASLADADO EN ENERGIS</span>`;
+        }
+        // Actualizar en memoria
+        const reg = datosTraslados.find(r => r.id === id);
+        if (reg) reg.estado = nuevoEstado;
+    }
+
+    // ── CAMBIAR ESTADO SOLICITUD (solo local, sin BD) ─────────────────────────
+    function cambiarEstadoSolicitud(el, id) {
+        const nuevoEstado = el.value;
+        const esFinal = nuevoEstado === 'ENTREGADO';
+        const msg = esFinal
+            ? `¿Confirmar "${nuevoEstado}"?\n\n⚠️ Este estado es DEFINITIVO en esta sesión.`
+            : `¿Confirmar cambio a "${nuevoEstado}"?`;
+        if (!confirm(msg)) { el.value = el.dataset.prev || 'SOLICITADO'; return; }
+        el.dataset.prev = nuevoEstado;
+
+        // Actualizar color
+        if (nuevoEstado === 'ANULADO') {
+            el.style.background = '#eab308'; el.style.color = '#000';
+        } else if (nuevoEstado === 'SOLICITADO') {
+            el.style.background = '#ef4444'; el.style.color = 'white';
+        }
+        // Si es final, bloquear visualmente
+        if (esFinal) {
+            el.parentElement.innerHTML = `<span class="estado-bloqueado estado-ENTREGADO">ENTREGADO</span>`;
+        }
+        // Actualizar en memoria
+        const reg = datosSolicitudes.find(r => r.id === id);
+        if (reg) reg.estado = nuevoEstado;
+    }
+
     function exportarExcel() {
         const datos = tabActiva === 'traslados' ? datosTraslados : datosSolicitudes;
         if (datos.length === 0) return alert("No hay datos para exportar");
